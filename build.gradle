@@ -1,0 +1,82 @@
+buildscript {
+    ext {
+        springBootVersion = '1.5.4.RELEASE'
+    }
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+    }
+}
+
+plugins {
+    id "com.ewerk.gradle.plugins.querydsl" version "1.0.9"
+}
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'checkstyle'
+apply plugin: 'jacoco'
+
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile('org.springframework.boot:spring-boot-starter-aop')
+    compile('org.springframework.boot:spring-jdbc:4.3.8.RELEASE')
+    compile('org.springframework.boot:spring-boot-starter-data-mongodb')
+    compile('org.springframework.boot:spring-boot-starter-security')
+    compile('org.springframework.boot:spring-boot-starter-web')
+    compile('org.springframework.security.oauth:spring-security-oauth2')
+    compile('com.monitorjbl:spring-json-view:0.15') {
+        exclude group: "org.slf4j", module: "slf4j-log4j12"
+        exclude group: "org.slf4j", module: "slf4j-api"
+    }
+    compile('org.apache.commons:commons-lang3:3.6')
+    compile('io.springfox:springfox-swagger2:2.7.0')
+    compile('io.springfox:springfox-swagger-ui:2.7.0')
+    compile('com.querydsl:querydsl-mongodb:4.1.4')
+    compile('com.querydsl:querydsl-apt:4.1.4')
+    compile('org.mockito:mockito-core:2.8.47')
+    compile('commons-beanutils:commons-beanutils:1.9.3')
+    testCompile('org.springframework.boot:spring-boot-starter-test')
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir "$buildDir/generated/source/apt/main"
+        }
+    }
+}
+
+querydsl {
+    springDataMongo = true
+    querydslSourcesDir = "$buildDir/generated/source/apt/main"
+}
+
+checkstyle {
+    toolVersion = '8.1'
+    sourceSets = [sourceSets.main]
+    config = rootProject.resources.text.fromFile("config/checkstyle/google_checks.xml")
+    configProperties = ["suppressionFile": project(':').file('config/checkstyle/suppressions.xml')]
+}
+
+jacocoTestReport {
+    executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/*.exec")
+
+    reports {
+        xml.enabled true
+        xml.destination "${buildDir}/reports/jacoco/report.xml"
+        html.enabled false
+        csv.enabled false
+    }
+}
+
+check.dependsOn jacocoTestReport

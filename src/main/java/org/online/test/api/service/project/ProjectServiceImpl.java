@@ -1,0 +1,130 @@
+/*package org.online.test.api.service.project;
+
+import java.util.List;
+
+import org.online.test.api.annotation.LogExecutionTime;
+import org.online.test.api.domain.Organization;
+import org.online.test.api.domain.Project;
+import org.online.test.api.domain.ProjectUser;
+import org.online.test.api.domain.QProject;
+import org.online.test.api.event.EntityCreatedEvent;
+import org.online.test.api.exception.ApplicationException;
+import org.online.test.api.exception.ErrorResponseEnum;
+import org.online.test.api.exception.ValidationError;
+import org.online.test.api.exception.ValidationException;
+import org.online.test.api.helper.PaginationHelper;
+import org.online.test.api.repository.OrganizationRepository;
+import org.online.test.api.repository.ProjectRepository;
+import org.online.test.api.repository.ProjectUserRepository;
+import org.online.test.api.utils.DateUtil;
+import org.online.test.api.validator.ProjectValidator;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
+
+@Service
+public class ProjectServiceImpl implements ProjectService {
+
+  private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory
+      .getLogger(ProjectServiceImpl.class);
+
+  @Autowired
+  private PaginationHelper paginationHelper;
+
+  @Value("${pagination.project.default}")
+  private int defaultPageSize;
+
+  @Value("${pagination.project.max}")
+  private int maxPageSize;
+
+  @Autowired
+  private ProjectRepository projectRepository;
+
+  @Autowired
+  private OrganizationRepository organizationRepository;
+
+  @Autowired
+  private ProjectUserRepository projectUserRepository;
+
+  @Autowired
+  private ApplicationEventPublisher eventPublisher;
+
+  @Override
+  @LogExecutionTime
+  public void create(Project project) {
+    Assert.notNull(project, "Project data can not be null.");
+
+    List<ValidationError> validationErrorList = ProjectValidator.validateProjectData(project);
+    if (!validationErrorList.isEmpty()) {
+      LOG.error("Could not create an project due to insufficient data.");
+      throw new ValidationException(validationErrorList, ErrorResponseEnum.VALIDATION_ERROR);
+    }
+
+    String organizationId = project.getOrganizationId();
+    String projectName = project.getName();
+
+    Organization organization = organizationRepository.findOne(project.getOrganizationId());
+    if (organization == null || !organization.isActive()) {
+      LOG.error("Organization is inactive or not found. Could not create project {} in org {}",
+          projectName, organizationId);
+      throw new ApplicationException(ErrorResponseEnum.ORGANIZATION_INACTIVE_ERROR);
+    }
+
+    Project existingProject = projectRepository
+        .findProjectByNameAndOrganizationId(project.getName(), project.getOrganizationId());
+    if (existingProject != null) {
+      LOG.error("Project with name {} already exists in organization {}. Specify another name.",
+          projectName, organization.getName());
+      throw new ApplicationException("Project with same name exists in the organization.");
+    }
+
+    project.setCreatedAt(DateUtil.now());
+    projectRepository.save(project);
+    publishProjectCreatedEvent(project);
+    LOG.info("Created project {} successfully.", projectName);
+  }
+
+  @Override
+  @LogExecutionTime
+  public Project getById(String id) {
+    Assert.notNull(id, "Project id can not be null.");
+    Project project = projectRepository.findOne(id);
+    return project;
+  }
+
+  @Override
+  @LogExecutionTime
+  public boolean checkProjectUserAccess(String projectId, String userId) {
+    Assert.notNull(projectId, "Project ID can not be null.");
+    Assert.notNull(userId, "User ID can not be null.");
+    LOG.info("Check if user {} has access to project {}.", userId, projectId);
+
+    ProjectUser projectUser = projectUserRepository
+        .findByProjectIdAndUserIdAndActive(projectId, userId, true);
+    return (projectUser != null);
+  }
+
+  @Override
+  @LogExecutionTime
+  public List<Project> search(String orgId, Integer page, Integer limit,
+      String sortBy, String sortDir) {
+    page = paginationHelper.refinePageNumber(page);
+    limit = paginationHelper.validateResponseLimit(limit, defaultPageSize, maxPageSize);
+
+    //https://stackoverflow.com/questions/33283560/querydsl-dynamic-predicates
+    Project predicate = QProject.project;
+    Page<Project> projects = projectRepository
+        .findAll(predicate.organizationId.eq(orgId),
+            paginationHelper.pageRequest(page, limit, sortBy, sortDir));
+    return projects.getContent();
+  }
+
+  void publishProjectCreatedEvent(Project project) {
+    EntityCreatedEvent entityCreatedEvent = new EntityCreatedEvent(this, project);
+    eventPublisher.publishEvent(entityCreatedEvent);
+  }
+}
+*/
